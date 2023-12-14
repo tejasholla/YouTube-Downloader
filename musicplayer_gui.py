@@ -18,11 +18,18 @@ class MusicPlayerGUI:
         self.setup_ui_elements(root)
 
     def setup_window(self, root):
-        root.title("Music Player")
-        root.configure(bg='#121212')
+        root.title("AudioAvenue")
+        # Using softer colors for a minimal look
+        self.bg_color = '#212121'
+        self.text_color = '#fafafa'  
+        self.accent_color = '#f44336'     
+        self.separator_color = '#424242'  
+        self.header_font_color = '#ff8a65'
+
+        root.configure(bg=self.bg_color)
         root.geometry("830x600")
         # Set the transparency of the window
-        root.attributes('-alpha', 0.97)    # Adjust the value as needed, e.g., 0.95 for 95% opacity 
+        root.attributes('-alpha', 0.97)
 
     def initialize_variables(self):
         self.playlists = {}     # Key: playlist name, Value: list of song file paths
@@ -39,7 +46,15 @@ class MusicPlayerGUI:
         if not os.path.exists(self.playlist_storage_path):
             os.makedirs(self.playlist_storage_path)
         self.load_playlists()
-        
+
+    def load_logo(self, image_path):
+        # Load the image using PIL for more flexibility with image types
+        image = Image.open(image_path)
+        # Optionally resize the image here if needed
+        image = image.resize((10, 10), Image.ANTIALIAS)
+        photo_image = ImageTk.PhotoImage(image)
+        return photo_image
+   
     def get_resource_path(self, file_name):
         return os.path.join(os.path.dirname(__file__), f'images\\{file_name}')
 
@@ -48,29 +63,49 @@ class MusicPlayerGUI:
         image = PhotoImage(file=image_path)
         return image.subsample(size_reduction_factor, size_reduction_factor)
 
+    def load_logo(self, image_name, size_reduction_factor=14):
+        image_path = self.get_resource_path(image_name)
+        image = PhotoImage(file=image_path)
+        return image.subsample(size_reduction_factor, size_reduction_factor)
+    
     def setup_ui_elements(self, root):
         # Font settings
         standard_font = ("Calibri", 11, "bold")
         time_label_font = ("Calibri", 10, "bold")
         song_name_font = ("Calibri", 12, "bold")
         header_font = ("Calibri", 14, "bold")
+        app_font = ("Calibri", 22, "bold")
         search_entry_font = font.Font(family="Calibri", size=12, weight="bold")
-
+        
         play_icon_image = self.load_image('play_icon.png')
         stop_icon_image = self.load_image('stop_icon.png')
         next_icon_image = self.load_image('next_icon.png')
         prev_icon_image = self.load_image('previous_icon.png') 
 
         # Left Frame for Songs List and Load Button
-        self.left_frame = tk.Frame(root, bg='#2c2c2c')
+        self.left_frame = tk.Frame(root, bg=self.bg_color)
         self.left_frame.pack(side=tk.LEFT, fill=tk.BOTH, expand=True)
 
+        # Create a top frame to hold the logo and application name
+        top_frame = tk.Frame(self.left_frame, bg=self.bg_color)
+        top_frame.pack(side=tk.TOP, fill=tk.X)
+
+        # Load and display the logo in the top-left corner
+        logo_image = self.load_logo('logo.png')  # Replace with your logo file path
+        self.logo_label = tk.Label(top_frame, image=logo_image, bg=self.bg_color)
+        self.logo_label.image = logo_image  # Keep a reference
+        self.logo_label.pack(side=tk.LEFT, padx=10)  # Pack logo to the left
+
+        # Application Name Label next to the logo
+        self.app_name_label = tk.Label(top_frame, text='AudioAvenue', bg=self.bg_color, fg=self.accent_color, font=app_font)
+        self.app_name_label.pack(side=tk.LEFT, padx=10)  # Pack label next to the logo
+
         # Create a frame that will act as the border
-        border_frame = tk.Frame(self.left_frame, bg='#ff8c00', bd=2)
+        border_frame = tk.Frame(self.left_frame, bg=self.accent_color, bd=2)
         border_frame.pack(fill=tk.X, padx=2, pady=2)
 
         self.search_var = tk.StringVar()
-        self.search_entry = tk.Entry(border_frame, textvariable=self.search_var, bg='#2c2c2c', fg='white', insertbackground='#ff8c00', font=search_entry_font)
+        self.search_entry = tk.Entry(border_frame, textvariable=self.search_var, bg=self.bg_color, fg=self.text_color, insertbackground=self.accent_color, font=search_entry_font)
         self.search_entry.pack(side=tk.LEFT, fill=tk.X, expand=True)
 
         # Assuming you have a search icon image named 'search_icon.png' in the same directory as your script
@@ -78,12 +113,12 @@ class MusicPlayerGUI:
         search_icon_image = PhotoImage(file=search_icon_path)
         search_icon_image = search_icon_image.subsample(3, 3)  # Adjust the subsample values as needed
 
-        self.search_button = tk.Button(border_frame, image=search_icon_image, command=self.search_songs, bg='#ff8c00', borderwidth=0)
+        self.search_button = tk.Button(border_frame, image=search_icon_image, command=self.search_songs, bg=self.accent_color, borderwidth=0)
         self.search_button.image = search_icon_image  # Keep a reference
         self.search_button.pack(side=tk.LEFT)
 
         # Songs Listbox
-        self.track_listbox = tk.Listbox(self.left_frame, bg='#2c2c2c', fg='white', selectbackground='black')
+        self.track_listbox = tk.Listbox(self.left_frame, bg=self.bg_color, fg=self.text_color, selectbackground=self.separator_color, borderwidth=0)
         self.track_listbox.pack(fill=tk.BOTH, expand=True)
         self.track_listbox.bind("<Double-1>", self.play_selected_song)  # Bind double-click event
         self.track_listbox.bind('<Button-3>', self.on_right_click)
@@ -93,10 +128,10 @@ class MusicPlayerGUI:
             self.populate_music_list()
 
         # Playlist Label
-        self.playlist_label = tk.Label(self.left_frame, text='Playlist', bg='#2c2c2c', fg='#ff8c00', font=header_font, anchor='w')
+        self.playlist_label = tk.Label(self.left_frame, text='Playlist', bg=self.bg_color, fg=self.header_font_color, font=header_font, anchor='w')
         self.playlist_label.pack(fill=tk.X)
 
-        self.playlist_listbox = tk.Listbox(self.left_frame, bg='#2c2c2c', fg='white', selectbackground='black', height=1)
+        self.playlist_listbox = tk.Listbox(self.left_frame, bg=self.bg_color, fg=self.text_color, selectbackground=self.bg_color, borderwidth=0, height=1)
         self.playlist_listbox.pack(fill=tk.BOTH, expand=True)
 
         # Populate the playlist listbox
@@ -107,47 +142,51 @@ class MusicPlayerGUI:
         self.playlist_listbox.bind('<Button-3>', self.on_playlist_right_click)
 
         # Create a frame for the Load Button and Create Playlist Button
-        buttons_frame = tk.Frame(self.left_frame, bg='#2c2c2c')
+        buttons_frame = tk.Frame(self.left_frame, bg=self.bg_color)
         buttons_frame.pack(fill=tk.X)
 
         # Create Playlist Button - "+" button
-        self.create_playlist_button = tk.Button(buttons_frame, text=' + ', command=self.create_playlist_ui, bg='black', fg='#ff8c00', font=header_font)
+        self.create_playlist_button = tk.Button(buttons_frame, text=' + ', command=self.create_playlist_ui, bg=self.accent_color, fg='black', font=header_font)
         self.create_playlist_button.pack(side=tk.RIGHT, padx=2)  # Align to the right
 
         # Load Button
-        self.load_button = tk.Button(buttons_frame, text='Load Music Folder', command=self.load_music_folder, bg='#ff8c00', fg='black', font=header_font)
+        self.load_button = tk.Button(buttons_frame, text='Load Music Folder', command=self.load_music_folder, bg=self.accent_color, fg='black', font=header_font)
         self.load_button.pack(side=tk.LEFT, expand=True, fill=tk.X)  # Fill the remaining space
 
+        # Separator Line
+        separator = tk.Frame(root, bg=self.separator_color, width=2)
+        separator.pack(side=tk.LEFT, fill=tk.Y, padx=(0, 2))
+
         # Right Frame for Song Details
-        self.right_frame = tk.Frame(root, bg='#2c2c2c')
-        self.right_frame.pack(side=tk.RIGHT, fill=tk.BOTH, expand=True)
+        self.right_frame = tk.Frame(root, bg=self.bg_color)
+        self.right_frame.pack(side=tk.LEFT, fill=tk.BOTH, expand=True)
 
         # Song Image Placeholder
-        self.song_image_label = tk.Label(self.right_frame, text='Song Image', bg='black', width=20, height=10)
+        self.song_image_label = tk.Label(self.right_frame, bg=self.bg_color, width=20, height=10)
         self.song_image_label.pack(anchor='center', pady=50)
 
         # Song Name Label
-        self.song_name_label = tk.Label(self.right_frame, text='Song Name', bg='#2c2c2c', fg='white', font=song_name_font)
+        self.song_name_label = tk.Label(self.right_frame, text='Song Name', bg=self.bg_color, fg=self.text_color, font=song_name_font)
         self.song_name_label.pack()
 
         # Frame for Time Labels
-        self.time_labels_frame = tk.Frame(self.right_frame, bg='#2c2c2c')
+        self.time_labels_frame = tk.Frame(self.right_frame, bg=self.bg_color)
         self.time_labels_frame.pack()
 
         # Current Time Label
-        self.current_time_label = tk.Label(self.time_labels_frame, text='00:00', bg='#2c2c2c', fg='#ff8c00', font=time_label_font)
+        self.current_time_label = tk.Label(self.time_labels_frame, text='00:00', bg=self.bg_color, fg=self.header_font_color, font=time_label_font)
         self.current_time_label.pack(side=tk.LEFT)
 
         # Separator Label (Optional, for aesthetic purpose)
-        self.separator_label = tk.Label(self.time_labels_frame, text='/', bg='#2c2c2c', fg='#ff8c00', font=time_label_font)
+        self.separator_label = tk.Label(self.time_labels_frame, text='/', bg=self.bg_color, fg=self.header_font_color, font=time_label_font)
         self.separator_label.pack(side=tk.LEFT)
 
         # Track Duration Label
-        self.track_duration_label = tk.Label(self.time_labels_frame, text='00:00', bg='#2c2c2c', fg='#ff8c00', font=time_label_font)
+        self.track_duration_label = tk.Label(self.time_labels_frame, text='00:00', bg=self.bg_color, fg=self.header_font_color, font=time_label_font)
         self.track_duration_label.pack(side=tk.LEFT)
 
         # Control Buttons Frame
-        self.controls_frame = tk.Frame(self.right_frame, bg='#2c2c2c')
+        self.controls_frame = tk.Frame(self.right_frame, bg=self.bg_color)
         self.controls_frame.pack(anchor='center', pady=28)
 
         # Progress Bar
@@ -155,22 +194,22 @@ class MusicPlayerGUI:
         # self.progress.pack(fill=tk.X)
 
         # Previous Button
-        self.prev_button = tk.Button(self.controls_frame, image=prev_icon_image, command=self.prev_track, bg='#ff8c00', borderwidth=0)
+        self.prev_button = tk.Button(self.controls_frame, image=prev_icon_image, command=self.prev_track, bg=self.accent_color, borderwidth=0)
         self.prev_button.image = prev_icon_image  # Keep a reference
         self.prev_button.pack(side=tk.LEFT, padx=7)
 
         # Play/Pause Button
-        self.play_pause_button = tk.Button(self.controls_frame, image=play_icon_image, command=self.toggle_play_pause, bg='#ff8c00', borderwidth=0)
+        self.play_pause_button = tk.Button(self.controls_frame, image=play_icon_image, command=self.toggle_play_pause, bg=self.accent_color, borderwidth=0)
         self.play_pause_button.image = play_icon_image  # Keep a reference
         self.play_pause_button.pack(side=tk.LEFT, padx=7)
 
         # Stop Button
-        self.stop_button = tk.Button(self.controls_frame, image=stop_icon_image, command=self.stop_music, bg='#ff8c00', borderwidth=0)
+        self.stop_button = tk.Button(self.controls_frame, image=stop_icon_image, command=self.stop_music, bg=self.accent_color, borderwidth=0)
         self.stop_button.image = stop_icon_image  # Keep a reference
         self.stop_button.pack(side=tk.LEFT, padx=7)
 
         # Next Button
-        self.next_button = tk.Button(self.controls_frame, image=next_icon_image, command=self.next_track, bg='#ff8c00', borderwidth=0)
+        self.next_button = tk.Button(self.controls_frame, image=next_icon_image, command=self.next_track, bg=self.accent_color, borderwidth=0)
         self.next_button.image = next_icon_image  # Keep a reference
         self.next_button.pack(side=tk.LEFT, padx=7)
 
@@ -389,14 +428,14 @@ class MusicPlayerGUI:
     def update_song_selection(self):
         # Clear previous selection
         for i in range(self.track_listbox.size()):
-            self.track_listbox.itemconfig(i, {'bg': '#2c2c2c', 'fg': 'white'})
+            self.track_listbox.itemconfig(i, {'bg': self.bg_color, 'fg': self.text_color})
 
         # Highlight the current track
         if self.current_track_index is not None:
             self.track_listbox.selection_clear(0, tk.END)
             self.track_listbox.selection_set(self.current_track_index)
             self.track_listbox.activate(self.current_track_index)
-            self.track_listbox.itemconfig(self.current_track_index, {'fg': '#ff8c00'})
+            self.track_listbox.itemconfig(self.current_track_index, {'bg': 'black', 'fg': self.header_font_color})
             self.track_listbox.see(self.current_track_index)  # Ensure the current track is visible
 
     def load_music_folder(self):
