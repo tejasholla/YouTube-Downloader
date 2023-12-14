@@ -76,7 +76,7 @@ class MusicPlayerGUI:
         header_font = ("Calibri", 14, "bold")
         app_font = ("Calibri", 22, "bold")
         search_entry_font = font.Font(family="Calibri", size=12, weight="bold")
-        
+
         play_icon_image = self.load_image('play_icon.png')
         stop_icon_image = self.load_image('stop_icon.png')
         next_icon_image = self.load_image('next_icon.png')
@@ -113,7 +113,7 @@ class MusicPlayerGUI:
         search_icon_image = PhotoImage(file=search_icon_path)
         search_icon_image = search_icon_image.subsample(3, 3)  # Adjust the subsample values as needed
 
-        self.search_button = tk.Button(border_frame, image=search_icon_image, command=self.search_songs, bg=self.accent_color, borderwidth=0)
+        self.search_button = tk.Button(border_frame, image=search_icon_image, command=self.search_songs, bg=self.bg_color, borderwidth=0)
         self.search_button.image = search_icon_image  # Keep a reference
         self.search_button.pack(side=tk.LEFT)
 
@@ -145,13 +145,21 @@ class MusicPlayerGUI:
         buttons_frame = tk.Frame(self.left_frame, bg=self.bg_color)
         buttons_frame.pack(fill=tk.X)
 
+        # Button dimensions
+        button_width = 20  # Width of the buttons
+        button_height = 1  # Height of the buttons
+
         # Create Playlist Button - "+" button
-        self.create_playlist_button = tk.Button(buttons_frame, text=' + ', command=self.create_playlist_ui, bg=self.accent_color, fg='black', font=header_font)
-        self.create_playlist_button.pack(side=tk.RIGHT, padx=2)  # Align to the right
+        self.create_playlist_button = self.create_round_button(buttons_frame, '+', self.create_playlist_ui)
 
         # Load Button
-        self.load_button = tk.Button(buttons_frame, text='Load Music Folder', command=self.load_music_folder, bg=self.accent_color, fg='black', font=header_font)
-        self.load_button.pack(side=tk.LEFT, expand=True, fill=tk.X)  # Fill the remaining space
+        self.load_button = tk.Button(buttons_frame, text='Load Music Folder', 
+                                    bg=self.accent_color, fg='black', 
+                                    font=header_font, width=button_width, 
+                                    height=button_height, 
+                                    command=self.load_music_folder)
+        self.load_button.pack(side=tk.LEFT, expand=True, fill=tk.X)
+
 
         # Separator Line
         separator = tk.Frame(root, bg=self.separator_color, width=2)
@@ -194,24 +202,24 @@ class MusicPlayerGUI:
         # self.progress.pack(fill=tk.X)
 
         # Previous Button
-        self.prev_button = tk.Button(self.controls_frame, image=prev_icon_image, command=self.prev_track, bg=self.accent_color, borderwidth=0)
+        self.prev_button = tk.Button(self.controls_frame, image=prev_icon_image, command=self.prev_track, bg=self.bg_color, borderwidth=0)
         self.prev_button.image = prev_icon_image  # Keep a reference
-        self.prev_button.pack(side=tk.LEFT, padx=7)
+        self.prev_button.pack(side=tk.LEFT, padx=10)
 
         # Play/Pause Button
-        self.play_pause_button = tk.Button(self.controls_frame, image=play_icon_image, command=self.toggle_play_pause, bg=self.accent_color, borderwidth=0)
+        self.play_pause_button = tk.Button(self.controls_frame, image=play_icon_image, command=self.toggle_play_pause, bg=self.bg_color, borderwidth=0)
         self.play_pause_button.image = play_icon_image  # Keep a reference
-        self.play_pause_button.pack(side=tk.LEFT, padx=7)
+        self.play_pause_button.pack(side=tk.LEFT, padx=10)
 
         # Stop Button
-        self.stop_button = tk.Button(self.controls_frame, image=stop_icon_image, command=self.stop_music, bg=self.accent_color, borderwidth=0)
+        self.stop_button = tk.Button(self.controls_frame, image=stop_icon_image, command=self.stop_music, bg=self.bg_color, borderwidth=0)
         self.stop_button.image = stop_icon_image  # Keep a reference
-        self.stop_button.pack(side=tk.LEFT, padx=7)
+        self.stop_button.pack(side=tk.LEFT, padx=10)
 
         # Next Button
-        self.next_button = tk.Button(self.controls_frame, image=next_icon_image, command=self.next_track, bg=self.accent_color, borderwidth=0)
+        self.next_button = tk.Button(self.controls_frame, image=next_icon_image, command=self.next_track, bg=self.bg_color, borderwidth=0)
         self.next_button.image = next_icon_image  # Keep a reference
-        self.next_button.pack(side=tk.LEFT, padx=7)
+        self.next_button.pack(side=tk.LEFT, padx=10)
 
         # Center the control buttons
         self.controls_frame.pack(anchor='center')
@@ -224,6 +232,22 @@ class MusicPlayerGUI:
         self.song_name_label.configure(font=standard_font)
         # self.song_details_label.configure(font=standard_font)  # Uncomment if you use it
 
+    def create_round_button(self, frame, text, command):
+        # Create a canvas to hold the button
+        canvas = tk.Canvas(frame, width=30, height=30, bg=self.bg_color, highlightthickness=0)
+        canvas.pack(side=tk.RIGHT, padx=2)
+    
+        # Draw a circle on the canvas
+        canvas.create_oval(2, 2, 29, 29, fill=self.accent_color, outline=self.accent_color)
+    
+        # Add the text in the middle of the circle
+        canvas.create_text(15, 14, text=text, fill='black', font=('Calibri', 20, 'bold'))
+    
+        # Add the command to the canvas click event
+        canvas.bind('<Button-1>', lambda event: command())
+    
+        return canvas
+    
     def on_playlist_right_click(self, event):
         try:
             selected_index = self.playlist_listbox.nearest(event.y)
