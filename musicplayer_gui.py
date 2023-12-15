@@ -17,6 +17,8 @@ class MusicPlayerGUI:
         self.setup_window(root)
         self.initialize_variables()
         self.setup_ui_elements(root)
+        # Automatically display all songs on startup
+        self.play_playlist(self.all_songs_playlist_name)
 
     def setup_window(self, root):
         root.title("AudioAvenue")
