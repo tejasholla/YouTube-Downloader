@@ -9,6 +9,7 @@ from io import BytesIO
 from tkinter import PhotoImage
 from tkinter import font
 import json
+import shutil
 
 class MusicPlayerGUI:
     def __init__(self, root):
@@ -42,10 +43,12 @@ class MusicPlayerGUI:
         self.is_playing = False
         self.is_paused = False
         self.default_album_art_path = self.get_resource_path('album_art.png')
-        self.playlist_storage_path = "D:\\Media"  # Change this to the desired path
+        self.playlist_storage_path = "D:\\Media\\Music"  # Change this to the desired path
         if not os.path.exists(self.playlist_storage_path):
             os.makedirs(self.playlist_storage_path)
         self.load_playlists()
+        self.all_songs_playlist_name = "All Songs"
+        self.create_all_songs_playlist()
 
     def load_logo(self, image_path):
         # Load the image using PIL for more flexibility with image types
@@ -247,7 +250,18 @@ class MusicPlayerGUI:
         canvas.bind('<Button-1>', lambda event: command())
     
         return canvas
-    
+
+    def create_all_songs_playlist(self):
+        self.playlists[self.all_songs_playlist_name] = self.scan_for_songs(self.music_folder)
+
+    def scan_for_songs(self, directory):
+        song_paths = []
+        for root, dirs, files in os.walk(directory):
+            for file in files:
+                if file.endswith('.mp3'):
+                    song_paths.append(os.path.join(root, file))
+        return song_paths
+        
     def on_playlist_right_click(self, event):
         try:
             selected_index = self.playlist_listbox.nearest(event.y)
@@ -279,8 +293,14 @@ class MusicPlayerGUI:
 
     def populate_playlist_listbox(self):
         self.playlist_listbox.delete(0, tk.END)  # Clear existing items
+
+        # Insert the "All Songs" playlist first
+        self.playlist_listbox.insert(tk.END, self.all_songs_playlist_name)
+
+        # Insert other playlists
         for playlist in self.playlists.keys():
-            self.playlist_listbox.insert(tk.END, playlist)
+            if playlist != self.all_songs_playlist_name:
+                self.playlist_listbox.insert(tk.END, playlist)
 
     def on_playlist_double_clicked(self, event):
         selected_index = self.playlist_listbox.curselection()
@@ -357,35 +377,51 @@ class MusicPlayerGUI:
         if playlist_name not in self.playlists:
             self.playlists[playlist_name] = []
             self.save_playlists()
+            # Create a directory for the playlist
+            playlist_folder = os.path.join(self.playlist_storage_path, playlist_name)
+            if not os.path.exists(playlist_folder):
+                os.makedirs(playlist_folder)
 
     def add_song_to_playlist(self, song_name, playlist_name):
         if playlist_name in self.playlists:
             self.playlist_selected = True
-            # Store only the song name with extension
             song_file = song_name + '.mp3'
-            self.playlists[playlist_name].append(song_file)
-            self.save_playlists()
+            # Move the song to the playlist folder
+            src = os.path.join(self.music_folder, song_file)
+            dest = os.path.join(self.playlist_storage_path, playlist_name, song_file)
+
+            try:
+                shutil.move(src, dest)  # Use shutil.copy(src, dest) to copy instead of move
+                # Update the playlist
+                self.playlists[playlist_name].append(dest)
+                self.save_playlists()
+
+                # Reload the song list in the ListView
+                self.populate_music_list()
+            except Exception as e:
+                messagebox.showerror("Error", f"Failed to move the song: {e}")
 
     def play_playlist(self, playlist_name):
-        if playlist_name in self.playlists:
-            # Clear the current track list and the listbox
-            self.track_list = []
-            self.track_listbox.delete(0, tk.END)
-
+        self.track_list = []
+        self.track_listbox.delete(0, tk.END)
+        # Load tracks 
+        if playlist_name == self.all_songs_playlist_name:
+            # Load tracks from all songs
+            self.track_list = self.playlists[self.all_songs_playlist_name]
+        else:
             # Load tracks from the selected playlist
-            playlist_tracks = [os.path.join(self.music_folder, name) for name in self.playlists[playlist_name]]
-            self.track_list = playlist_tracks
+            self.track_list = [os.path.join(self.music_folder, name) for name in self.playlists[playlist_name]]
 
-            # Repopulate the listbox with playlist tracks
-            for track_path in playlist_tracks:
-                track_name = os.path.basename(track_path)  # Get the base name of the file
-                track_name_without_extension = os.path.splitext(track_name)[0]  # Remove the file extension
-                self.track_listbox.insert(tk.END, track_name_without_extension)
+        # Repopulate the listbox with playlist tracks
+        for track_path in self.track_list:
+            track_name = os.path.basename(track_path)  # Get the base name of the file
+            track_name_without_extension = os.path.splitext(track_name)[0]  # Remove the file extension
+            self.track_listbox.insert(tk.END, track_name_without_extension)
 
-            # If the playlist has songs, play the first song
-            if self.track_list:
-                self.current_track_index = 0
-                self.play_music(0)
+        # If the playlist has songs, play the first song
+        if self.track_list:
+            self.current_track_index = 0
+            self.play_music(0)
 
     def save_playlists(self):
         # Convert full paths to just file names before saving
@@ -401,8 +437,10 @@ class MusicPlayerGUI:
             with open(os.path.join(self.playlist_storage_path, 'playlists.json'), 'r') as file:
                 loaded_playlists = json.load(file)
                 self.playlists = {}
-                for playlist_name, track_names in loaded_playlists.items():
-                    self.playlists[playlist_name] = [os.path.join(self.music_folder, name) for name in track_names]
+                for playlist_name, track_paths in loaded_playlists.items():
+                    playlist_folder = os.path.join(self.playlist_storage_path, playlist_name)
+                    full_paths = [os.path.join(playlist_folder, name) for name in track_paths]
+                    self.playlists[playlist_name] = full_paths
         except (FileNotFoundError, json.JSONDecodeError):
             self.playlists = {}
 
